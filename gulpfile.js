@@ -138,8 +138,7 @@ gulp.task('report', ['zip'], function() {
 // base64 encode png spritesheet asset and inline it in js
 gulp.task('encode', function()  {
   var assets = [
-    { image: 'assets.png', property: 'tileset' },
-    { image: 'charset.png', property: 'charset' }
+    { image: 'img/veggie-ninja.png', property: 'tileset' }
   ];
 
   var loaders = [];
