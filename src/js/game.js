@@ -37,24 +37,24 @@
 
   function keyPressed(keyEvent) {
     // Left arrow / A / Q
-    if (keyEvent.which === 37 || keyEvent.which === 65 ||keyEvent.which === 81) { ninja.moveLeft = true; }
+    if (keyEvent.which === 37 || keyEvent.which === 65 ||keyEvent.which === 81) { ninja.moveLeft = 1; }
     // Up arrow / W / Z
-    if (keyEvent.which === 38 || keyEvent.which === 90 || keyEvent.which === 87) { ninja.moveUp = true; }
+    if (keyEvent.which === 38 || keyEvent.which === 90 || keyEvent.which === 87) { ninja.moveUp = 1; }
     // Right arrow / D
-    if (keyEvent.which === 39 || keyEvent.which === 68) { ninja.moveRight = true; }
+    if (keyEvent.which === 39 || keyEvent.which === 68) { ninja.moveRight = 1; }
     // Down arrow / S
-    if (keyEvent.which === 40 || keyEvent.which === 83) { ninja.moveDown = true; }
+    if (keyEvent.which === 40 || keyEvent.which === 83) { ninja.moveDown = 1; }
   };
 
   function keyReleased(keyEvent) {
     // Left arrow / A / Q
-    if (keyEvent.which === 37 || keyEvent.which === 65 || keyEvent.which === 81) { ninja.moveLeft = false; }
+    if (keyEvent.which === 37 || keyEvent.which === 65 || keyEvent.which === 81) { ninja.moveLeft = 0; }
     // Up arrow / W / Z
-    if (keyEvent.which === 38 || keyEvent.which === 90 || keyEvent.which === 87) { ninja.moveUp = false; }
+    if (keyEvent.which === 38 || keyEvent.which === 90 || keyEvent.which === 87) { ninja.moveUp = 0; }
     // Right arrow / D
-    if (keyEvent.which === 39 || keyEvent.which === 68) { ninja.moveRight = false; }
+    if (keyEvent.which === 39 || keyEvent.which === 68) { ninja.moveRight = 0; }
     // Down arrow / S
-    if (keyEvent.which === 40 || keyEvent.which === 83) { ninja.moveDown = false; }
+    if (keyEvent.which === 40 || keyEvent.which === 83) { ninja.moveDown = 0; }
   };
 
   function loadGame() {
