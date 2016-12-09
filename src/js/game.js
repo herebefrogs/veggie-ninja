@@ -3,6 +3,7 @@
   document.title = "Veggie Ninja";
 
   // global variables
+  const FRAME_INTERVAL = 0.1; // animation interval in seconds
   const WIDTH = 400;
   const HEIGHT = 300;
   const atlas = {
@@ -66,12 +67,14 @@
     return {
       action: 'idle',
       direction: 'right',
+      frame: 0,
+      lastFrame: 0,
       moveDown: 0,
       moveLeft: 0,
       moveRight: 0,
       moveUp: 0,
       speed: 100, // px/sec
-      sprites: atlas.ninja,
+      type: 'ninja',
       x: 0,
       y: 0
     }
@@ -159,7 +162,10 @@
 
   // render an entity onto the backbuffer at 1:1 scale
   function renderEntity(entity) {
-    let sprite = entity.sprites[entity.action][entity.direction];
+    let sprite = atlas[entity.type][entity.action][entity.direction];
+    if (entity.action === 'walk') {
+      sprite = sprite[entity.frame];
+    }
     buffer_ctx.drawImage(tileset, sprite.x, sprite.y, sprite.w, sprite.h,
                                   entity.x, entity.y, sprite.w, sprite.h);
   };
@@ -176,11 +182,24 @@
     buffer_ctx.imageSmoothingEnabled = ctx.imageSmoothingEnabled = false;
   };
 
-  function setEntityDirection(entity) {
+  function setEntityActionAndDirection(entity) {
     const leftOrRight = entity.moveLeft + entity.moveRight;
     const upOrDown = entity.moveUp + entity.moveDown;
+
+    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : 'walk';
+
     entity.direction = upOrDown < 0 ? 'up' : (upOrDown > 0 ? 'down' : entity.direction);
     entity.direction = leftOrRight < 0 ? 'left' : (leftOrRight > 0 ? 'right' : entity.direction);
+  };
+
+  function setEntityFrame(entity, elapsedTime) {
+    if (entity.action === 'walk') {
+      entity.lastFrame += elapsedTime;
+      if (entity.lastFrame > FRAME_INTERVAL) {
+        entity.lastFrame -= FRAME_INTERVAL;
+        entity.frame = (entity.frame + 1) % atlas[entity.type][entity.action][entity.direction].length;
+      }
+    }
   };
 
   function setEntityPosition(entity, elapsedTime) {
@@ -190,7 +209,8 @@
   };
 
   function update(elapsedTime) {
-    setEntityDirection(ninja);
+    setEntityActionAndDirection(ninja);
+    setEntityFrame(ninja, elapsedTime);
     setEntityPosition(ninja, elapsedTime);
   };
 })();
