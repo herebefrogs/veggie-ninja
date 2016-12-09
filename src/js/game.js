@@ -66,6 +66,11 @@
     return {
       action: 'idle',
       direction: 'right',
+      moveDown: 0,
+      moveLeft: 0,
+      moveRight: 0,
+      moveUp: 0,
+      speed: 100, // px/sec
       sprites: atlas.ninja,
       x: 0,
       y: 0
@@ -94,9 +99,9 @@
 
   function keyPressed(keyEvent) {
     // Left arrow / A / Q
-    if (keyEvent.which === 37 || keyEvent.which === 65 ||keyEvent.which === 81) { ninja.moveLeft = 1; }
+    if (keyEvent.which === 37 || keyEvent.which === 65 ||keyEvent.which === 81) { ninja.moveLeft = -1; }
     // Up arrow / W / Z
-    if (keyEvent.which === 38 || keyEvent.which === 90 || keyEvent.which === 87) { ninja.moveUp = 1; }
+    if (keyEvent.which === 38 || keyEvent.which === 90 || keyEvent.which === 87) { ninja.moveUp = -1; }
     // Right arrow / D
     if (keyEvent.which === 39 || keyEvent.which === 68) { ninja.moveRight = 1; }
     // Down arrow / S
@@ -171,7 +176,13 @@
     buffer_ctx.imageSmoothingEnabled = ctx.imageSmoothingEnabled = false;
   };
 
+  function setEntityPosition(entity, elapsedTime) {
+    const distance = entity.speed * elapsedTime;
+    entity.x += distance * (entity.moveLeft + entity.moveRight);
+    entity.y += distance * (entity.moveUp + entity.moveDown);
+  };
+
   function update(elapsedTime) {
-    console.log('update', elapsedTime, ninja.moveLeft, ninja.moveUp, ninja.moveRight, ninja.moveDown);
+    setEntityPosition(ninja, elapsedTime);
   };
 })();
