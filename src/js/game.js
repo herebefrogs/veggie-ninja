@@ -176,6 +176,13 @@
     buffer_ctx.imageSmoothingEnabled = ctx.imageSmoothingEnabled = false;
   };
 
+  function setEntityDirection(entity) {
+    const leftOrRight = entity.moveLeft + entity.moveRight;
+    const upOrDown = entity.moveUp + entity.moveDown;
+    entity.direction = upOrDown < 0 ? 'up' : (upOrDown > 0 ? 'down' : entity.direction);
+    entity.direction = leftOrRight < 0 ? 'left' : (leftOrRight > 0 ? 'right' : entity.direction);
+  };
+
   function setEntityPosition(entity, elapsedTime) {
     const distance = entity.speed * elapsedTime;
     entity.x += distance * (entity.moveLeft + entity.moveRight);
@@ -183,6 +190,7 @@
   };
 
   function update(elapsedTime) {
+    setEntityDirection(ninja);
     setEntityPosition(ninja, elapsedTime);
   };
 })();
