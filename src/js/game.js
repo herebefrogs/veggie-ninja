@@ -43,6 +43,8 @@
   };
   const canvas = document.querySelector('canvas');
   const ctx = canvas.getContext('2d');
+  const buffer = document.createElement('canvas');
+  const buffer_ctx = buffer.getContext('2d');
   let currentTime;
   let ninja;
   let lastTime;
@@ -53,9 +55,32 @@
   addEventListener('load', init);
 
   // global functions
+
+  // copy backbuffer onto visible canvas, scaling it to screen dimensions
+  function blit() {
+    ctx.drawImage(buffer, 0, 0, buffer.width, buffer.height,
+                          0, 0, canvas.width, canvas.height);
+  }
+
+  function createNinja() {
+    return {
+      action: 'idle',
+      direction: 'right',
+      sprites: atlas.ninja,
+      x: 0,
+      y: 0
+    }
+
+  };
+
   function init() {
     // implicit window.
     addEventListener('resize', resize);
+
+    // set back buffer canvas size
+    buffer.width = WIDTH;
+    buffer.height = HEIGHT;
+    // scale to fit visible canvas
     resize();
 
     // load assets
@@ -94,7 +119,7 @@
     addEventListener('keydown', keyPressed);
     addEventListener('keyup', keyReleased);
 
-    ninja = {};
+    ninja = createNinja();
 
     lastTime = Date.now();
     loop();
@@ -119,7 +144,19 @@
   };
 
   function render() {
-    console.log('render');
+    buffer_ctx.fillStyle = "#FFFFFF";
+    buffer_ctx.fillRect(0, 0, buffer.width, buffer.height);
+
+    renderEntity(ninja);
+
+    blit();
+  };
+
+  // render an entity onto the backbuffer at 1:1 scale
+  function renderEntity(entity) {
+    let sprite = entity.sprites[entity.action][entity.direction];
+    buffer_ctx.drawImage(tileset, sprite.x, sprite.y, sprite.w, sprite.h,
+                                  entity.x, entity.y, sprite.w, sprite.h);
   };
 
   function resize() {
@@ -129,9 +166,9 @@
     canvas.height = HEIGHT * scaleToFit;
 
     // disable smoothing on scaling
-    ctx.mozImageSmoothingEnabled = false;
-    ctx.msImageSmoothingEnabled = false;
-    ctx.imageSmoothingEnabled = false;
+    buffer_ctx.mozImageSmoothingEnabled = ctx.mozImageSmoothingEnabled = false;
+    buffer_ctx.msImageSmoothingEnabled = ctx.msImageSmoothingEnabled = false;
+    buffer_ctx.imageSmoothingEnabled = ctx.imageSmoothingEnabled = false;
   };
 
   function update(elapsedTime) {
