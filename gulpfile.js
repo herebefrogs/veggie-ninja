@@ -155,8 +155,8 @@ gulp.task('encode', function()  {
     var stream = gulp.src('src/js/game.js');
 
     values.forEach(function(value) {
-      stream.pipe(replace(new RegExp(value.property + ': \'.*\'', 'gm'),
-                          value.property + ': \'' + value.data + '\''));
+      stream.pipe(replace(new RegExp(value.property + ' = \'.*\'', 'gm'),
+                          value.property + ' = \'' + value.data + '\''));
     });
 
     return stream.pipe(gulp.dest('./src/js/'));
