@@ -4,8 +4,10 @@
 
   // global variables
   const FRAME_INTERVAL = 0.1; // animation interval in seconds
-  const WIDTH = 400;
+  const LEFT_ANALOG_X_AXIS = 0;
+  const LEFT_ANALOG_Y_AXIS = 1;
   const HEIGHT = 300;
+  const WIDTH = 400;
   const atlas = {
     ninja: {
       idle: {
@@ -47,6 +49,7 @@
   const buffer = document.createElement('canvas');
   const buffer_ctx = buffer.getContext('2d');
   let currentTime;
+  let gamepad;
   let ninja;
   let lastTime;
   let requestId;
@@ -78,7 +81,21 @@
       x: 0,
       y: 0
     }
+  };
 
+  function gamepadConnected(e) {
+    // Chrome fires a gamepadconnected event in lieu of a gamepaddisconnected one
+    if (navigator.getGamepads()[e.gamepad.index] !== undefined) {
+      console.log('connecting', e.gamepad);
+      gamepad = e.gamepad;
+    }
+  };
+
+  function gamepadDisconnected(e) {
+    if (gamepad.index === e.gamepad.index) {
+      console.log('disconnecting', gamepad);
+      gamepad = undefined;
+    }
   };
 
   function init() {
@@ -90,6 +107,11 @@
     buffer.height = HEIGHT;
     // scale to fit visible canvas
     resize();
+
+    // turn off gamepad polling if Gamepad API not supported
+    if (!navigator.getGamepads) {
+      pollGamepadData = function() {};
+    }
 
     // load assets
     loadTileset(tileset)
@@ -126,6 +148,8 @@
     // implicit window.
     addEventListener('keydown', keyPressed);
     addEventListener('keyup', keyReleased);
+    addEventListener('gamepadconnected', gamepadConnected);
+    addEventListener('gamepaddisconnected', gamepadDisconnected);
 
     ninja = createNinja();
 
@@ -149,6 +173,45 @@
     currentTime = Date.now();
     update((currentTime - lastTime) / 1000);
     lastTime = currentTime;
+  };
+
+  function pollGamepadData() {
+    const controllers = navigator.getGamepads();
+    if (!gamepad) {
+      // pick the first connected gamepad of the list
+      for (controller of controllers) {
+        if (controller) {
+          gamepad = controller;
+          console.log('detected', gamepad);
+          break;
+        }
+      }
+    }
+    if (gamepad) {
+      if (controllers[gamepad.index] === undefined) {
+        // we missed the gamepadisconnected event
+        gamepadDisconnected({ gamepad });
+        return;
+      }
+
+      // once connected, gamepad takes precedence over keyboard arrows
+      let left_x = Math.round(gamepad.axes[LEFT_ANALOG_X_AXIS] * 100) / 100;
+      if (left_x <= 0) {
+        ninja.moveLeft = left_x;
+        ninja.moveRight = 0;
+      } else {
+        ninja.moveLeft = 0;
+        ninja.moveRight = left_x;
+      }
+      let left_y = Math.round(gamepad.axes[LEFT_ANALOG_Y_AXIS] * 100) / 100;
+      if (left_y <= 0) {
+        ninja.moveUp = left_y;
+        ninja.moveDown = 0;
+      } else {
+        ninja.moveUp = 0;
+        ninja.moveDown = left_y;
+      }
+    }
   };
 
   function render() {
@@ -209,6 +272,8 @@
   };
 
   function update(elapsedTime) {
+    pollGamepadData();
+
     setEntityActionAndDirection(ninja);
     setEntityFrame(ninja, elapsedTime);
     setEntityPosition(ninja, elapsedTime);
