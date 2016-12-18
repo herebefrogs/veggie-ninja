@@ -83,16 +83,20 @@
     }
   };
 
-  function gamepadConnected(e) {
-    // Chrome fires a gamepadconnected event in lieu of a gamepaddisconnected one
-    if (navigator.getGamepads()[e.gamepad.index] !== undefined) {
+  function gamepadConnected(e, gamepads) {
+    if ((gamepads || navigator.getGamepads())[e.gamepad.index] && e.gamepad.connected) {
       console.log('connecting', e.gamepad);
       gamepad = e.gamepad;
+    } else {
+      // ¯\_(ツ)_/¯ Chrome fires a gamepadconnected event in lieu of
+      // a gamepaddisconnected one, with connected set to true nonetheless
+      // so force the gamepad disconnection
+      gamepadDisconnected({ gamepad: { index: e.gamepad.index, connected: false }});
     }
-  };
+  }
 
   function gamepadDisconnected(e) {
-    if (gamepad.index === e.gamepad.index) {
+    if (gamepad && gamepad.index === e.gamepad.index && !e.gamepad.connected) {
       console.log('disconnecting', gamepad);
       gamepad = undefined;
     }
@@ -177,23 +181,17 @@
 
   function pollGamepadData() {
     const controllers = navigator.getGamepads();
+    // ¯\_(ツ)_/¯ Chrome doesn't fire the gamepadconnected event when attaching a gamepad
+    // so pick the first connected gamepad of the list
     if (!gamepad) {
-      // pick the first connected gamepad of the list
-      for (controller of controllers) {
-        if (controller) {
-          gamepad = controller;
-          console.log('detected', gamepad);
+      for (let controller of controllers) {
+        if (controller && controller.connected) {
+          gamepadConnected({ gamepad: controller }, controllers);
           break;
         }
       }
     }
     if (gamepad) {
-      if (controllers[gamepad.index] === undefined) {
-        // we missed the gamepadisconnected event
-        gamepadDisconnected({ gamepad });
-        return;
-      }
-
       // once connected, gamepad takes precedence over keyboard arrows
       let left_x = Math.round(gamepad.axes[LEFT_ANALOG_X_AXIS] * 100) / 100;
       if (left_x <= 0) {
