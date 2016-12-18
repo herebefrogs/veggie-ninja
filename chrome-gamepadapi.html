@@ -1,0 +1,54 @@
+<html>
+<head>
+  <title>gamepadconnected/gamepaddisconnected events tester</title>
+</head>
+<body>
+  <h1>gamepadconnected/gamepaddisconnected events tester</h1>
+  <h3>Test plan:</h3>
+  <p>1. Load the page without a gamepad connected</p>
+  <p>2. Connect a gamepad to the USD port. Press a button if you wish.</p>
+  <p><b>Expected:</b> Javascript console logged a gamepad connected event.
+  <pre>gamepadconnected event Gamepad { id: '...', index: 0 ... } connected true</pre>
+  </p>
+  <p><b>Actual:</b> Javascript console is empty, but navigator.getGamepads() cleary shows a Gamepad at index 0.</p>
+  <p>3. Disconnect the gamepad from the USD port.</p>
+  <p><b>Expected:</b> Javascript console contains the following line.
+  <pre>gamepaddisconnected event Gamepad { id: '...', index: 0 ... } connected false</pre>
+  </p>
+  <p><b>Actual:</b> Javascript console logged a gamepad connected event instead.
+  <pre>gamepadconnected event Gamepad { id: '...', index: 0 ... } connected true</pre>
+  </p>
+  <p>4. Connect a gamepad before reloading the page. Same behaviour as Step 2.</p>
+  <p>5. Disconnect the gamepad. Same behaviour as Step 3.</p>
+  <p>6. Repeat test plan with Firefox. Works as expected</p>
+
+  <h3>Additional info:</h3>
+  <p>
+    <b>Operating system</b>: Mac OS X El Capitan<br>
+    <b>Chrome version</b>: 55.0.2883.95 (64-bit)<br>
+    <b>Firefox version</b>: 48.0.2, 50.0.2 and 50.1.0<br>
+    <b>Gamepad model</b>: Afterglow AX.1 (Wired Controller for Xbox 360)<br>
+    <b>Gamepad id (as reported by Gamepad API)</b>: "Xbox 360 Wired Controller (Vendor: 1bad Product: f900)<br>
+  </p>
+
+<script>
+function gamepadConnected(e) {
+  console.log('gamepadconnected event', e.gamepad, 'connected', e.gamepad.connected);
+}
+
+function gamepadDisconnected(e) {
+  console.log('gamepaddisconnected event', e.gamepad, 'connected', e.gamepad.connected);
+};
+
+window.addEventListener('gamepadconnected', gamepadConnected);
+window.addEventListener('gamepaddisconnected', gamepadDisconnected);
+
+(function loop() {
+  requestAnimationFrame(loop);
+  const gamepads = navigator.getGamepads();
+  //console.log('gamepads', gamepads);
+})();
+
+</script>
+</body>
+</html>
