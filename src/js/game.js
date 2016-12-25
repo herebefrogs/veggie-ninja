@@ -64,7 +64,22 @@
   function blit() {
     ctx.drawImage(buffer, 0, 0, buffer.width, buffer.height,
                           0, 0, canvas.width, canvas.height);
-  }
+  };
+
+  function constrainEntityToViewport(entity) {
+    const sprite = getEntitySprite(entity);
+    if (entity.x <= 0) {
+      entity.x = 0;
+    } else if (entity.x + sprite.w >= WIDTH) {
+      entity.x = WIDTH - sprite.w;
+    }
+    // skip one tile vertically for score
+    if (entity.y <= 0) {
+      entity.y = 0;
+    } else if (entity.y >= HEIGHT - sprite.h) {
+      entity.y = HEIGHT - sprite.h;
+    }
+  };
 
   function createNinja() {
     return {
@@ -100,6 +115,11 @@
       console.log('disconnecting', gamepad);
       gamepad = undefined;
     }
+  };
+
+  function getEntitySprite(entity) {
+    const sprite = atlas[entity.type][entity.action][entity.direction];
+    return (entity.action === 'walk') ? sprite[entity.frame] : sprite;
   };
 
   function init() {
@@ -223,10 +243,7 @@
 
   // render an entity onto the backbuffer at 1:1 scale
   function renderEntity(entity) {
-    let sprite = atlas[entity.type][entity.action][entity.direction];
-    if (entity.action === 'walk') {
-      sprite = sprite[entity.frame];
-    }
+    const sprite = getEntitySprite(entity);
     buffer_ctx.drawImage(tileset, sprite.x, sprite.y, sprite.w, sprite.h,
                                   entity.x, entity.y, sprite.w, sprite.h);
   };
@@ -275,5 +292,6 @@
     setEntityActionAndDirection(ninja);
     setEntityFrame(ninja, elapsedTime);
     setEntityPosition(ninja, elapsedTime);
+    constrainEntityToViewport(ninja);
   };
 })();
