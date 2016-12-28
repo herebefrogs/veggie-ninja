@@ -66,6 +66,14 @@
                           0, 0, canvas.width, canvas.height);
   };
 
+  function changeVisibility(e) {
+    if (e.target.hidden) {
+      // ¯\_(ツ)_/¯ Chrome also stop sending data for the cached gamepad after changing tab
+      // so clear the cached gamepad
+      gamepadDisconnected({ gamepad: { index: gamepad.index, connected: false }});
+    }
+  };
+
   function constrainEntityToViewport(entity) {
     const sprite = getEntitySprite(entity);
     if (entity.x <= 0) {
@@ -174,6 +182,7 @@
     addEventListener('keyup', keyReleased);
     addEventListener('gamepadconnected', gamepadConnected);
     addEventListener('gamepaddisconnected', gamepadDisconnected);
+    document.addEventListener('visibilitychange', changeVisibility);
 
     ninja = createNinja();
 
