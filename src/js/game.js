@@ -9,6 +9,28 @@
   const HEIGHT = 300;
   const WIDTH = 400;
   const atlas = {
+    eggplant: {
+      move: {
+        left: [
+          { x: 0, y: 72, w: 16, h: 18 },
+          { x: 16, y: 72, w: 16, h: 18 },
+          { x: 32, y: 72, w: 16, h: 18 },
+          { x: 48, y: 72, w: 16, h: 18 },
+          { x: 64, y: 72, w: 16, h: 18 }
+        ]
+      }
+    },
+    garlic: {
+      move: {
+        left: [
+          { x: 0, y: 108, w: 16, h: 18 },
+          { x: 16, y: 108, w: 16, h: 18 },
+          { x: 32, y: 108, w: 16, h: 18 },
+          { x: 48, y: 108, w: 16, h: 18 },
+          { x: 64, y: 108, w: 16, h: 18 }
+        ]
+      }
+    },
     ninja: {
       idle: {
         left: { x: 0, y: 0, w: 16, h: 18 },
@@ -16,7 +38,7 @@
         right: { x: 0, y: 36, w: 16, h: 18 },
         up: { x: 0, y: 54, w: 16, h: 18 }
       },
-      walk: {
+      move: {
         left: [
           { x: 16, y: 0, w: 16, h: 18 },
           { x: 32, y: 0, w: 16, h: 18 },
@@ -43,12 +65,24 @@
         ]
       }
     },
+    radish: {
+      move: {
+        left: [
+          { x: 0, y: 90, w: 16, h: 18 },
+          { x: 16, y: 90, w: 16, h: 18 },
+          { x: 32, y: 90, w: 16, h: 18 },
+          { x: 48, y: 90, w: 16, h: 18 },
+          { x: 64, y: 90, w: 16, h: 18 }
+        ]
+      }
+    }
   };
   const canvas = document.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   const buffer = document.createElement('canvas');
   const buffer_ctx = buffer.getContext('2d');
   let currentTime;
+  let entities;
   let gamepad;
   let ninja;
   let lastTime;
@@ -106,6 +140,42 @@
     }
   };
 
+  function createVeggie(type = 'eggplant') {
+    let sprite = getSprite(type, 'move', 'left', 0);
+    let x = 0;
+    let y = 0;
+    switch (randomInt(0, 3)) {
+      case 0:
+        x = randomInt(0, WIDTH - sprite.w);
+        break;
+      case 1:
+        x = WIDTH - sprite.w;
+        y = randomInt(0, HEIGHT - sprite.h);
+        break;
+      case 2:
+        x = randomInt(0, WIDTH - sprite.w);
+        y = HEIGHT - sprite.h;
+        break;
+      case 3:
+        y = randomInt(0, HEIGHT - sprite.h);
+        break;
+    }
+    return {
+      action: 'move',
+      direction: 'left', // never changes
+      frame: 0,
+      lastFrame: 0,
+      moveDown: 0,
+      moveLeft: 0,
+      moveRight: 0,
+      moveUp: 0,
+      speed: 60, // px/sec
+      type,
+      x,
+      y
+    }
+  };
+
   function gamepadConnected(e, gamepads) {
     if ((gamepads || navigator.getGamepads())[e.gamepad.index] && e.gamepad.connected) {
       console.log('connecting', e.gamepad);
@@ -127,7 +197,11 @@
 
   function getEntitySprite(entity) {
     const sprite = atlas[entity.type][entity.action][entity.direction];
-    return (entity.action === 'walk') ? sprite[entity.frame] : sprite;
+    return (entity.action === 'move') ? sprite[entity.frame] : sprite;
+  };
+
+  function getSprite(type, action, direction, frame) {
+    return getEntitySprite({ action, direction, frame, type });
   };
 
   function init() {
@@ -185,6 +259,10 @@
     document.addEventListener('visibilitychange', changeVisibility);
 
     ninja = createNinja();
+    entities = [ ninja ];
+
+    let type = [ 'eggplant', 'garlic', 'radish' ][randomInt(0, 2)];
+    entities.push(createVeggie(type));
 
     lastTime = Date.now();
     loop();
@@ -241,11 +319,17 @@
     }
   };
 
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max + 1 - min) + min);
+  };
+
   function render() {
     buffer_ctx.fillStyle = "#FFFFFF";
     buffer_ctx.fillRect(0, 0, buffer.width, buffer.height);
 
-    renderEntity(ninja);
+    for (let entity of entities) {
+      renderEntity(entity);
+    }
 
     blit();
   };
@@ -269,18 +353,20 @@
     buffer_ctx.imageSmoothingEnabled = ctx.imageSmoothingEnabled = false;
   };
 
+  // currently only useful for ninja, as veggies always move
+  // and currently have only 1 animation regardless of direction
   function setEntityActionAndDirection(entity) {
     const leftOrRight = entity.moveLeft + entity.moveRight;
     const upOrDown = entity.moveUp + entity.moveDown;
 
-    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : 'walk';
+    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : 'move';
 
     entity.direction = upOrDown < 0 ? 'up' : (upOrDown > 0 ? 'down' : entity.direction);
     entity.direction = leftOrRight < 0 ? 'left' : (leftOrRight > 0 ? 'right' : entity.direction);
   };
 
   function setEntityFrame(entity, elapsedTime) {
-    if (entity.action === 'walk') {
+    if (entity.action === 'move') {
       entity.lastFrame += elapsedTime;
       if (entity.lastFrame > FRAME_INTERVAL) {
         entity.lastFrame -= FRAME_INTERVAL;
@@ -295,12 +381,32 @@
     entity.y += distance * (entity.moveUp + entity.moveDown);
   };
 
+  function setVeggieDirection(veggie, ninja) {
+    veggie.moveLeft = veggie.moveRight = veggie.moveUp = veggie.moveDown = 0;
+
+    const dX = ninja.x - veggie.x;
+    const dY = ninja.y - veggie.y;
+    const d = Math.sqrt(dX * dX + dY * dY);
+    if (d !== 0) {
+      const vX = dX / d;
+      const vY = dY / d;
+      veggie[vX >= 0 ? 'moveRight' : 'moveLeft'] = vX;
+      veggie[vY >= 0 ? 'moveDown' : 'moveUp'] = vY;
+    }
+  }
+
   function update(elapsedTime) {
     pollGamepadData();
 
-    setEntityActionAndDirection(ninja);
-    setEntityFrame(ninja, elapsedTime);
-    setEntityPosition(ninja, elapsedTime);
-    constrainEntityToViewport(ninja);
+    for (let entity of entities) {
+      if (entity === ninja) {
+        setEntityActionAndDirection(entity);
+      } else if (entity.frame === 0) {
+        setVeggieDirection(entity, ninja);
+      }
+      setEntityFrame(entity, elapsedTime);
+      setEntityPosition(entity, elapsedTime);
+      constrainEntityToViewport(entity);
+    }
   };
 })();
