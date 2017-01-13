@@ -3,9 +3,14 @@
   document.title = "Veggie Ninja";
 
   // global variables
+  const ATTACK_SPEED_MULTIPLIER = 3;
   const FRAME_INTERVAL = 0.1; // animation interval in seconds
-  const LEFT_ANALOG_X_AXIS = 0;
+  const LEFT_ANALOG_X_AXIS = 0; // very specific to Afterglow Xbox Controller
   const LEFT_ANALOG_Y_AXIS = 1;
+  const BUTTON_A = 0;
+  const BUTTON_B = 1;
+  const BUTTON_X = 2;
+  const BUTTON_Y = 3;
   const HEIGHT = 300;
   const WIDTH = 400;
   const atlas = {
@@ -32,6 +37,32 @@
       }
     },
     ninja: {
+      attack: {
+        left: [
+          { x: 16, y: 0, w: 16, h: 18 },
+          { x: 32, y: 0, w: 16, h: 18 },
+          { x: 48, y: 0, w: 16, h: 18 },
+          { x: 64, y: 0, w: 16, h: 18 }
+        ],
+        down: [
+          { x: 16, y: 18, w: 16, h: 18 },
+          { x: 32, y: 18, w: 16, h: 18 },
+          { x: 48, y: 18, w: 16, h: 18 },
+          { x: 64, y: 18, w: 16, h: 18 }
+        ],
+        right: [
+          { x: 16, y: 36, w: 16, h: 18 },
+          { x: 32, y: 36, w: 16, h: 18 },
+          { x: 48, y: 36, w: 16, h: 18 },
+          { x: 64, y: 36, w: 16, h: 18 }
+        ],
+        up: [
+          { x: 16, y: 54, w: 16, h: 18 },
+          { x: 32, y: 54, w: 16, h: 18 },
+          { x: 48, y: 54, w: 16, h: 18 },
+          { x: 64, y: 54, w: 16, h: 18 }
+        ]
+      },
       idle: {
         left: { x: 0, y: 0, w: 16, h: 18 },
         down: { x: 0, y: 18, w: 16, h: 18 },
@@ -239,6 +270,10 @@
   };
 
   function keyPressed(keyEvent) {
+    // Space
+    if (keyEvent.which === 32) {
+      ninja.attack = true;
+    }
     // Left arrow / A / Q
     if (keyEvent.which === 37 || keyEvent.which === 65 ||keyEvent.which === 81) { ninja.moveLeft = -1; }
     // Up arrow / W / Z
@@ -250,6 +285,10 @@
   };
 
   function keyReleased(keyEvent) {
+    // Space
+    if (keyEvent.which === 32) {
+      ninja.attack = false;
+    }
     // Left arrow / A / Q
     if (keyEvent.which === 37 || keyEvent.which === 65 || keyEvent.which === 81) { ninja.moveLeft = 0; }
     // Up arrow / W / Z
@@ -312,6 +351,12 @@
       }
     }
     if (gamepad) {
+      // ninja attack if any button is pressed
+      ninja.attack = gamepad.buttons[BUTTON_A].pressed ||
+                     gamepad.buttons[BUTTON_B].pressed ||
+                     gamepad.buttons[BUTTON_X].pressed ||
+                     gamepad.buttons[BUTTON_Y].pressed;
+
       // once connected, gamepad takes precedence over keyboard arrows
       let left_x = Math.round(gamepad.axes[LEFT_ANALOG_X_AXIS] * 100) / 100;
       if (left_x <= 0) {
@@ -372,14 +417,14 @@
     const leftOrRight = entity.moveLeft + entity.moveRight;
     const upOrDown = entity.moveUp + entity.moveDown;
 
-    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : 'move';
+    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : entity.attach ? 'attack' : 'move';
 
     entity.direction = upOrDown < 0 ? 'up' : (upOrDown > 0 ? 'down' : entity.direction);
     entity.direction = leftOrRight < 0 ? 'left' : (leftOrRight > 0 ? 'right' : entity.direction);
   };
 
   function setEntityFrame(entity, elapsedTime) {
-    if (entity.action === 'move') {
+    if (entity.action !== 'idle') {
       entity.lastFrame += elapsedTime;
       if (entity.lastFrame > FRAME_INTERVAL) {
         entity.lastFrame -= FRAME_INTERVAL;
@@ -389,7 +434,7 @@
   };
 
   function setEntityPosition(entity, elapsedTime) {
-    const distance = entity.speed * elapsedTime;
+    const distance = entity.speed * elapsedTime * (entity.attack ? ATTACK_SPEED_MULTIPLIER : 1);
     entity.x += distance * (entity.moveLeft + entity.moveRight);
     entity.y += distance * (entity.moveUp + entity.moveDown);
   };
