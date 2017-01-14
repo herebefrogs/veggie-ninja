@@ -238,7 +238,7 @@
 
   function getEntitySprite(entity) {
     const sprite = atlas[entity.type][entity.action][entity.direction];
-    return (entity.action === 'move') ? sprite[entity.frame] : sprite;
+    return (entity.action !== 'idle') ? sprite[entity.frame] : sprite;
   };
 
   function getSprite(type, action, direction, frame) {
@@ -413,11 +413,11 @@
 
   // currently only useful for ninja, as veggies always move
   // and currently have only 1 animation regardless of direction
-  function setEntityActionAndDirection(entity) {
+  function setNinjaActionAndDirection(entity) {
     const leftOrRight = entity.moveLeft + entity.moveRight;
     const upOrDown = entity.moveUp + entity.moveDown;
 
-    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : entity.attach ? 'attack' : 'move';
+    entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : (entity.attack ? 'attack' : 'move');
 
     entity.direction = upOrDown < 0 ? 'up' : (upOrDown > 0 ? 'down' : entity.direction);
     entity.direction = leftOrRight < 0 ? 'left' : (leftOrRight > 0 ? 'right' : entity.direction);
@@ -458,7 +458,7 @@
 
     for (let entity of entities) {
       if (entity === ninja) {
-        setEntityActionAndDirection(entity);
+        setNinjaActionAndDirection(entity);
       } else if (entity.frame === 0) {
         setVeggieDirection(entity, ninja);
       }
