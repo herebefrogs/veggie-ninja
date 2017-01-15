@@ -182,6 +182,7 @@
   };
 
   function createNinja() {
+    const sprite = getSprite('ninja', 'idle', 'right');
     return {
       action: 'idle',
       dead: false,
@@ -195,8 +196,8 @@
       moveUp: 0,
       speed: 100, // px/sec
       type: 'ninja',
-      x: 0,
-      y: 0
+      x: (WIDTH - sprite.w) / 2,
+      y: (HEIGHT - sprite.h) / 2
     }
   };
 
