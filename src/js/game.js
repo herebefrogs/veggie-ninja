@@ -157,13 +157,7 @@
       gamepadDisconnected({ gamepad: { index: gamepad.index, connected: false }});
     }
 
-    running = !event.target.hidden;
-    if (running) {
-      // skip all the missed time to avoid a huge leap forward
-      lastTime = Date.now();
-      // restart the game animation loop
-      loop();
-    }
+    toggleLoop(!event.target.hidden);
   };
 
   function constrainEntityToViewport(entity) {
@@ -304,6 +298,11 @@
     if (keyEvent.which === 39 || keyEvent.which === 68) { ninja.moveRight = 1; }
     // Down arrow / S
     if (keyEvent.which === 40 || keyEvent.which === 83) { ninja.moveDown = 1; }
+
+    // P
+    if (keyEvent.which === 80) {
+      toggleLoop(!running);
+    }
   };
 
   function keyReleased(keyEvent) {
@@ -335,9 +334,7 @@
 
     spawnVeggie();
 
-    running = true;
-    lastTime = Date.now();
-    loop();
+    toggleLoop(true);
   };
 
   function loadTileset(tileset) {
@@ -482,6 +479,16 @@
     entities.push(createVeggie(type));
   };
 
+  function toggleLoop(value) {
+    running = value;
+    if (running) {
+      lastTime = Date.now();
+      loop();
+    } else {
+      cancelAnimationFrame(requestId);
+    }
+  };
+
   function unloadGame() {
     // implicit window.
     removeEventListener('keydown', keyPressed);
@@ -490,7 +497,7 @@
     removeEventListener('gamepaddisconnected', gamepadDisconnected);
     document.removeEventListener('visibilitychange', changeVisibility);
 
-    cancelAnimationFrame(requestId);
+    toggleLoop(false);
   };
 
   function update(elapsedTime) {
