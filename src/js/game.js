@@ -5,6 +5,7 @@
   // global variables
   const ATTACK_SPEED_MULTIPLIER = 3;
   const FRAME_INTERVAL = 0.1; // animation interval in seconds
+  const END_GAME_DELAY = 2; // deplay before ending game in seconds
   const LEFT_ANALOG_X_AXIS = 0; // very specific to Afterglow Xbox Controller
   const LEFT_ANALOG_Y_AXIS = 1;
   const BUTTON_A = 0;
@@ -15,6 +16,9 @@
   const WIDTH = 400;
   const atlas = {
     eggplant: {
+      dead: {
+        left: [ { x: 64, y: 144, w: 16, h: 18 } ]
+      },
       move: {
         left: [
           { x: 0, y: 72, w: 16, h: 18 },
@@ -26,6 +30,9 @@
       }
     },
     garlic: {
+      dead: {
+        left: [ { x: 64, y: 144, w: 16, h: 18 } ]
+      },
       move: {
         left: [
           { x: 0, y: 108, w: 16, h: 18 },
@@ -63,6 +70,12 @@
           { x: 64, y: 54, w: 16, h: 18 }
         ]
       },
+      dead: {
+        left: [ { x: 64, y: 144, w: 16, h: 18 } ],
+        down: [ { x: 64, y: 144, w: 16, h: 18 } ],
+        right: [ { x: 64, y: 144, w: 16, h: 18 } ],
+        up: [ { x: 64, y: 144, w: 16, h: 18 } ]
+      },
       idle: {
         left: { x: 0, y: 0, w: 16, h: 18 },
         down: { x: 0, y: 18, w: 16, h: 18 },
@@ -97,6 +110,9 @@
       }
     },
     radish: {
+      dead: {
+        left: [ { x: 64, y: 144, w: 16, h: 18 } ],
+      },
       move: {
         left: [
           { x: 0, y: 90, w: 16, h: 18 },
@@ -119,7 +135,8 @@
   let lastTime;
   let requestId;
   let running;
-  let tileset = 'data:image/png;base64,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';
+  let tileset = 'data:image/png;base64,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';
+  let veggiesSliced;
 
   // implicit window.
   addEventListener('load', init);
@@ -167,9 +184,11 @@
   function createNinja() {
     return {
       action: 'idle',
+      dead: false,
       direction: 'right',
       frame: 0,
       lastFrame: 0,
+      lastDead: 0,
       moveDown: 0,
       moveLeft: 0,
       moveRight: 0,
@@ -182,7 +201,7 @@
   };
 
   function createVeggie(type = 'eggplant') {
-    let sprite = getSprite(type, 'move', 'left', 0);
+    const sprite = getSprite(type, 'move', 'left', 0);
     let x = 0;
     let y = 0;
     switch (randomInt(0, 3)) {
@@ -203,9 +222,11 @@
     }
     return {
       action: 'move',
+      dead: false,
       direction: 'left', // never changes
       frame: 0,
       lastFrame: 0,
+      lastDead: 0,
       moveDown: 0,
       moveLeft: 0,
       moveRight: 0,
@@ -309,9 +330,9 @@
 
     ninja = createNinja();
     entities = [ ninja ];
+    veggiesSliced = 0;
 
-    let type = [ 'eggplant', 'garlic', 'radish' ][randomInt(0, 2)];
-    entities.push(createVeggie(type));
+    spawnVeggie();
 
     running = true;
     lastTime = Date.now();
@@ -434,9 +455,11 @@
   };
 
   function setEntityPosition(entity, elapsedTime) {
-    const distance = entity.speed * elapsedTime * (entity.attack ? ATTACK_SPEED_MULTIPLIER : 1);
-    entity.x += distance * (entity.moveLeft + entity.moveRight);
-    entity.y += distance * (entity.moveUp + entity.moveDown);
+    if (!entity.dead) {
+      const distance = entity.speed * elapsedTime * (entity.attack ? ATTACK_SPEED_MULTIPLIER : 1);
+      entity.x += distance * (entity.moveLeft + entity.moveRight);
+      entity.y += distance * (entity.moveUp + entity.moveDown);
+    }
   };
 
   function setVeggieDirection(veggie, ninja) {
@@ -453,11 +476,58 @@
     }
   }
 
+  function spawnVeggie() {
+    let type = [ 'eggplant', 'garlic', 'radish' ][randomInt(0, 2)];
+    entities.push(createVeggie(type));
+  };
+
+  function unloadGame() {
+    // implicit window.
+    removeEventListener('keydown', keyPressed);
+    removeEventListener('keyup', keyReleased);
+    removeEventListener('gamepadconnected', gamepadConnected);
+    removeEventListener('gamepaddisconnected', gamepadDisconnected);
+    document.removeEventListener('visibilitychange', changeVisibility);
+
+    cancelAnimationFrame(requestId);
+  };
+
   function update(elapsedTime) {
     pollGamepadData();
 
+    // collision test between ninja and all the veggies's previous positions
+    const ninjaSprite = getEntitySprite(ninja);
     for (let entity of entities) {
-      if (entity === ninja) {
+      if (entity === ninja || entity.dead) continue;
+
+      // TODO abstract in a function
+      const entitySprite = getEntitySprite(entity);
+      // AABB collision test
+      // TODO use bounding box rather than sprite size
+      if (ninja.x < entity.x + entitySprite.w &&
+          ninja.x + ninjaSprite.w > entity.x &&
+          ninja.y < entity.y + entitySprite.h &&
+          ninja.y + ninjaSprite.h > entity.y) {
+        // collision!
+        if (ninja.attack) {
+          entity.action = 'dead';
+          entity.dead = true;
+          // TODO messy
+          entity.frame = 0;
+        } else {
+          ninja.action = 'dead';
+          ninja.dead = true;
+          // TODO messy
+          ninja.frame = 0;
+        }
+      }
+    }
+
+    // update the state of the ninja and all the veggies
+    for (let entity of entities) {
+      if (entity.dead) {
+        updateScore(entity, elapsedTime);
+      } else if (entity === ninja) {
         setNinjaActionAndDirection(entity);
       } else if (entity.frame === 0) {
         setVeggieDirection(entity, ninja);
@@ -466,5 +536,23 @@
       setEntityPosition(entity, elapsedTime);
       constrainEntityToViewport(entity);
     }
+
+    if (ninja.lastDead > END_GAME_DELAY) {
+      unloadGame();
+      loadGame();
+    }
   };
+
+  function updateScore(entity, elapsedTime) {
+    if (entity.type === 'ninja') {
+      entity.lastDead += elapsedTime;
+    } else if (!entity.deathTallied) {
+      veggiesSliced += 1;
+      // TODO maybe move out of entities into background
+      entity.deathTallied = true;
+      spawnVeggie();
+      console.log('veggies sliced:', veggiesSliced);
+    }
+  };
+
 })();
