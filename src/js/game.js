@@ -151,7 +151,7 @@
 
   function changeVisibility(e) {
     // event target is document object
-    if (e.target.hidden) {
+    if (e.target.hidden && gamepad) {
       // ¯\_(ツ)_/¯ Chrome also stop sending data for the cached gamepad after changing tab
       // so clear the cached gamepad
       gamepadDisconnected({ gamepad: { index: gamepad.index, connected: false }});
