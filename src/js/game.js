@@ -14,6 +14,7 @@
   const BUTTON_Y = 3;
   const HEIGHT = 300;
   const WIDTH = 400;
+  const CHARSET_SIZE = 8; // width & height in pixel of each letter in charset image
   const atlas = {
     eggplant: {
       dead: {
@@ -124,10 +125,12 @@
       }
     }
   };
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789:!-%';
   const canvas = document.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   const buffer = document.createElement('canvas');
   const buffer_ctx = buffer.getContext('2d');
+  let charset = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAAICAYAAACI7CYfAAAB50lEQVR42uVaXYvDMAwL3Nve7v//2I3BDbYSf0iWkxwr7EYvc+rKtqqkHr+3nzv7GX+HN87aIj5kx1TXZP25+oH6MrOx5snExvOjan/iJ3tPijkz+FR8yfiK5CKLBXv/Azwq9m79PP9Yx+tHHePvAVp1/ehccf1o/hkBZu1n5xaGEb7XhFDbd8Rn9zmCkQpfZDybG9FvMrFV3T9CYozty87Ca6AJ2k0Q7///RgJU4Pdfx3cQ2C57RABEdeLlBlNfVwWpjF9UCxa5eQSYUcAm0XcE0ANYUcDW/BYQmSfYbJ4ZwAqCrBDgyQqqu4AY+0yOovkRqSe0frIEx/ifmSNLwFb+I/haRBYpvIgAI4Vp1uFqBdCpABmCigiQnd8rEI/Ar9+nKpiIIJAHlSK/LBwVSzQrhoiCY1UYS5Bs/LMkYtUHkz8ZBeiNM/GjFIhiCdmpAJk9tNVbABV8lNfP7DEplnDRE7y6x1TFv+rf6i0WpA4U+afAx6tjlQL0lsDeQ3vsCmAlgU9I0OoSiCXAyksQ70101x4Xu4TpIEALv5MJmsG3qnAV8UP8qxIg+vLkY4VQaQPY2QaDboJW2hzQ1/8r2zjQNoZsm0GltYJpg6i0WVTi390G0p0LUZuNqk2le7yyBM62z8zmeQBASn4xTWPLigAAAABJRU5ErkJggg==';
   let currentTime;
   let activeEntities;
   let deadEntities;
@@ -147,8 +150,11 @@
 
   // copy backbuffer onto visible canvas, scaling it to screen dimensions
   function blit() {
-    ctx.drawImage(buffer, 0, 0, buffer.width, buffer.height,
-                          0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      buffer,
+      0, 0, buffer.width, buffer.height,
+      0, 0, canvas.width, canvas.height
+    );
   };
 
   function changeVisibility(e) {
@@ -280,9 +286,9 @@
 
     // load assets
     loadTileset(tileset)
-    .then(function(img) {
-      tileset = img;
-    })
+    .then(function(img) { tileset = img; })
+    .then(function() { return loadTileset(charset); })
+    .then(function(img) { charset = img; })
     // start game
     .then(loadGame);
   };
@@ -405,25 +411,43 @@
   };
 
   function render() {
+    // clear buffer
     buffer_ctx.fillStyle = "#FFFFFF";
     buffer_ctx.fillRect(0, 0, buffer.width, buffer.height);
 
+    // render background and dead entities
     for (let entity of deadEntities) {
       renderEntity(entity);
     }
 
+    // render active entities
     for (let entity of activeEntities) {
       renderEntity(entity);
     }
 
+    renderText('score:' + score, CHARSET_SIZE, CHARSET_SIZE);
     blit();
   };
 
   // render an entity onto the backbuffer at 1:1 scale
   function renderEntity(entity) {
     const sprite = getEntitySprite(entity);
-    buffer_ctx.drawImage(tileset, sprite.x, sprite.y, sprite.w, sprite.h,
-                                  entity.x, entity.y, sprite.w, sprite.h);
+    buffer_ctx.drawImage(
+      tileset,
+      sprite.x, sprite.y, sprite.w, sprite.h,
+      entity.x, entity.y, sprite.w, sprite.h
+    );
+  };
+
+  function renderText(text, x, y) {
+    for (let i = 0; i < text.length; i++) {
+      buffer_ctx.drawImage(
+        charset,
+        // TODO could memoize the characters index or hardcode a lookup table
+        alphabet.indexOf(text[i])*CHARSET_SIZE, 0, CHARSET_SIZE, CHARSET_SIZE,
+        x + i*(CHARSET_SIZE + 1), y, CHARSET_SIZE, CHARSET_SIZE
+      );
+    }
   };
 
   function resize() {
