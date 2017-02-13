@@ -101,7 +101,7 @@ gulp.task('addjs', ['jsmin'], function() {
     console.log(extra_js.length, 'OK', exclude_min);
 
     var stream = gulp.src('src/index.html')
-      .pipe(replace(/<script.*>(.|\n)*<\/script>/i, '<script>'+extra_js+' '+js+'</script>'))
+      .pipe(replace(/<script.*>(.|\n)*<\/script>/i, function() { return '<script>'+extra_js+' '+js+'</script>' }))
       .pipe(htmlmin({collapseWhitespace: true}))
       .pipe(gulp.dest('./build'))
 
