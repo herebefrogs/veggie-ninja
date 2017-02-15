@@ -578,6 +578,11 @@
       constrainEntityToViewport(entity);
     }
 
+    // TODO for now, until I figure out how/when new veggies appears
+    if (activeEntities.length < 2 && !ninja.dead) {
+      spawnVeggie();
+    }
+
     // TODO for now, until end screen
     if (!timeoutId && ninja.dead) {
       timeoutId = setTimeout(function() {
@@ -592,9 +597,6 @@
     deadEntities.push(entity);
     if (entity !== ninja) {
       score += 1;
-      console.log('veggies sliced:', score);
-      // TODO for now, until I figure out how/when new veggies appears
-      spawnVeggie();
     }
   };
 
