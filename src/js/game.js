@@ -4,6 +4,8 @@ document.title = "Veggie Ninja";
 
 // global variables
 const ATTACK_SPEED_MULTIPLIER = 3;
+const ATTACK_MAX_TIME = 5; // maximum duration in seconds ninja can sustain attack mode
+const ATTACK_REFILL_MULTIPLIER = 0.3; // speed factor at which ninja attack time gauge refills
 const FRAME_INTERVAL = 0.1; // animation interval in seconds
 const END_GAME_DELAY = 2000; // delay before ending game in milliseconds
 const LEVEL_TIME = 60; // duration of a game level in seconds
@@ -126,12 +128,12 @@ const atlas = {
     }
   }
 };
-const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789:!-%';
+const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789.:!-%';
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
 const buffer = document.createElement('canvas');
 const buffer_ctx = buffer.getContext('2d');
-let charset = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAAICAYAAACI7CYfAAAB50lEQVR42uVaXYvDMAwL3Nve7v//2I3BDbYSf0iWkxwr7EYvc+rKtqqkHr+3nzv7GX+HN87aIj5kx1TXZP25+oH6MrOx5snExvOjan/iJ3tPijkz+FR8yfiK5CKLBXv/Azwq9m79PP9Yx+tHHePvAVp1/ehccf1o/hkBZu1n5xaGEb7XhFDbd8Rn9zmCkQpfZDybG9FvMrFV3T9CYozty87Ca6AJ2k0Q7///RgJU4Pdfx3cQ2C57RABEdeLlBlNfVwWpjF9UCxa5eQSYUcAm0XcE0ANYUcDW/BYQmSfYbJ4ZwAqCrBDgyQqqu4AY+0yOovkRqSe0frIEx/ifmSNLwFb+I/haRBYpvIgAI4Vp1uFqBdCpABmCigiQnd8rEI/Ar9+nKpiIIJAHlSK/LBwVSzQrhoiCY1UYS5Bs/LMkYtUHkz8ZBeiNM/GjFIhiCdmpAJk9tNVbABV8lNfP7DEplnDRE7y6x1TFv+rf6i0WpA4U+afAx6tjlQL0lsDeQ3vsCmAlgU9I0OoSiCXAyksQ70101x4Xu4TpIEALv5MJmsG3qnAV8UP8qxIg+vLkY4VQaQPY2QaDboJW2hzQ1/8r2zjQNoZsm0GltYJpg6i0WVTi390G0p0LUZuNqk2le7yyBM62z8zmeQBASn4xTWPLigAAAABJRU5ErkJggg==';
+let charset = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUgAAAAICAYAAACbO2brAAAB5klEQVR42uVa2YrDMAw07Fvf9v8/tqWwhTZY18zI9tJAWlLHiqJjPHI1fm8/d/Qcf4c3js6t6JAdUz0T1eeqR1WX2RxLTsY3nh7s/BPP7DspZGbsw+iS0bUSi6gt0Pcf4oOR7+bX88M6Xjd1jL87cNXzo2vF8yP5M4DMzp9dWzaM7HsNCPX8Dv/svq7YSGXfyng2NqJ7Mr5Vvb8SIBHZr3mWPUc1gLsB5P33bwRIhf3+6/gOgNs1v0IQojzxYgPJrysDVfqPAUmPHXoAmWHY5kLR4WDPAYoEt+RbhsisgDM5MwMrAJQByJMZWHeCIfMzMVqNj4h9VfMnC4CI/hkZWYC24r9iX5bpWfMigIwYrJmnqxlEJ4NEACwCSFS+l0AewF+/T2VAEYBUFjJFfFl2VJSAlg8rDBBlcSiAov7PgoiVH0j8ZBgiM474F2IwihK1k0Eie3irtxgY+yifn9njUpSI0QrP7nGx9mf1W72FU8kDRfwp7OPlsYIhsiW2t+iPXQ5mAvyEAGZLLBQgmT9pvH/Su/bY0BKoAyAt+50M4Ih9WYas8F9Fv26ArJbuHxUI0+aws82nugnLtHFU2xtWtqlU2zSybRJM6wjS5sG0kTD+725z6Y6FqI1I1YbTPd5ZYmfbg2ZyHuewlwnHUW0vAAAAAElFTkSuQmCC';
 let currentTime;
 let activeEntities;
 let deadEntities;
@@ -189,6 +191,7 @@ function createNinja() {
   const sprite = getSprite('ninja', 'idle', 'right');
   return {
     action: 'idle',
+    attackTime: ATTACK_MAX_TIME,
     dead: false,
     direction: 'right',
     frame: 0,
@@ -424,11 +427,18 @@ function render() {
     renderEntity(entity);
   }
 
-  let time = (remainingTime <= 9 ? '0:0' : '0:') + Math.ceil(remainingTime);
-  // number of characters times character width plus 1 pixel for spacing, plus padding of 1 character width
-  renderText(time, WIDTH - time.length * (CHARSET_SIZE + 1) - CHARSET_SIZE, CHARSET_SIZE);
-  renderText('score:' + score, CHARSET_SIZE, CHARSET_SIZE);
+  renderGameTimeLeft(remainingTime);
+  renderAttackTimeLeft(ninja.attackTime);
+  // score
+  renderText(`score:${score}`, CHARSET_SIZE, CHARSET_SIZE);
   blit();
+};
+
+function renderAttackTimeLeft(time) {
+  time = `${Math.ceil(time * 10)}`;
+  const msg = `attack:${time / 10}${time[time.length - 1] === '0' ? '.0': ''}s`
+  // number of characters times character width plus 1 pixel for spacing
+  renderText(msg, Math.round((WIDTH - msg.length * (CHARSET_SIZE + 1)) / 2), CHARSET_SIZE);
 };
 
 // render an entity onto the backbuffer at 1:1 scale
@@ -439,6 +449,12 @@ function renderEntity(entity) {
     sprite.x, sprite.y, sprite.w, sprite.h,
     Math.round(entity.x), Math.round(entity.y), sprite.w, sprite.h
   );
+};
+
+function renderGameTimeLeft(time) {
+  const msg = `0:${time <= 9 ? '0' : ''}${Math.ceil(time)}`;
+  // number of characters times character width plus 1 pixel for spacing, plus padding of 1 character width
+  renderText(msg, WIDTH - msg.length * (CHARSET_SIZE + 1) - CHARSET_SIZE, CHARSET_SIZE);
 };
 
 function renderText(text, x, y) {
@@ -470,10 +486,20 @@ function setNinjaActionAndDirection(entity) {
   const leftOrRight = entity.moveLeft + entity.moveRight;
   const upOrDown = entity.moveUp + entity.moveDown;
 
-  entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : (entity.attack ? 'attack' : 'move');
+  entity.action = upOrDown === 0 && leftOrRight === 0 ? 'idle' : (entity.attack && entity.attackTime ? 'attack' : 'move');
 
   entity.direction = upOrDown < 0 ? 'up' : (upOrDown > 0 ? 'down' : entity.direction);
   entity.direction = leftOrRight < 0 ? 'left' : (leftOrRight > 0 ? 'right' : entity.direction);
+};
+
+function setNinjaAttackTime(entity, elapsedTime) {
+  entity.attackTime = Math.max(
+    0,
+    Math.min(
+      ATTACK_MAX_TIME,
+      entity.attackTime + (entity.attack ? -elapsedTime : elapsedTime * ATTACK_REFILL_MULTIPLIER)
+    )
+  );
 };
 
 function setEntityFrame(entity, elapsedTime) {
@@ -488,7 +514,7 @@ function setEntityFrame(entity, elapsedTime) {
 
 function setEntityPosition(entity, elapsedTime) {
   if (!entity.dead) {
-    const distance = entity.speed * elapsedTime * (entity.attack ? ATTACK_SPEED_MULTIPLIER : 1);
+    const distance = entity.speed * elapsedTime * (entity.action === 'attack' ? ATTACK_SPEED_MULTIPLIER : 1);
     entity.x += distance * (entity.moveLeft + entity.moveRight);
     entity.y += distance * (entity.moveUp + entity.moveDown);
   }
@@ -553,7 +579,7 @@ function update(elapsedTime) {
           ninja.y < entity.y + entitySprite.h &&
           ninja.y + ninjaSprite.h > entity.y) {
         // collision!
-        if (ninja.attack) {
+        if (ninja.action === 'attack') {
           entity.action = 'dead';
           entity.dead = true;
           // TODO messy
@@ -573,6 +599,7 @@ function update(elapsedTime) {
         updateScore(entity, index);
         continue;
       } else if (entity === ninja) {
+        setNinjaAttackTime(entity, elapsedTime);
         setNinjaActionAndDirection(entity);
       } else if (entity.frame === 0) {
         setVeggieDirection(entity, ninja);
