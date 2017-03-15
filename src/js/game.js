@@ -437,7 +437,7 @@ function renderEntity(entity) {
   buffer_ctx.drawImage(
     tileset,
     sprite.x, sprite.y, sprite.w, sprite.h,
-    entity.x, entity.y, sprite.w, sprite.h
+    Math.round(entity.x), Math.round(entity.y), sprite.w, sprite.h
   );
 };
 
