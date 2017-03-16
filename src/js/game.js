@@ -1,4 +1,5 @@
 import rand from './util';
+import { gamepad, gamepadConnected, gamepadDisconnected, gamepadPollData } from './gamepad';
 
 document.title = "Veggie Ninja";
 
@@ -9,12 +10,6 @@ const ATTACK_REFILL_MULTIPLIER = 0.3; // speed factor at which ninja attack time
 const FRAME_INTERVAL = 0.1; // animation interval in seconds
 const END_GAME_DELAY = 2000; // delay before ending game in milliseconds
 const LEVEL_TIME = 60; // duration of a game level in seconds
-const LEFT_ANALOG_X_AXIS = 0; // very specific to Afterglow Xbox Controller
-const LEFT_ANALOG_Y_AXIS = 1;
-const BUTTON_A = 0;
-const BUTTON_B = 1;
-const BUTTON_X = 2;
-const BUTTON_Y = 3;
 const HEIGHT = 300;
 const WIDTH = 400;
 const CHARSET_SIZE = 8; // width & height in pixel of each letter in charset image
@@ -137,7 +132,6 @@ let charset = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUgAAAAICAYAAACbO2b
 let currentTime;
 let activeEntities;
 let deadEntities;
-let gamepad;
 let ninja;
 let lastTime;
 let remainingTime;
@@ -246,25 +240,6 @@ function createVeggie(type = 'eggplant') {
   }
 };
 
-function gamepadConnected(e, gamepads) {
-  if ((gamepads || navigator.getGamepads())[e.gamepad.index] && e.gamepad.connected) {
-    console.log('connecting', e.gamepad);
-    gamepad = e.gamepad;
-  } else {
-    // ¯\_(ツ)_/¯ Chrome fires a gamepadconnected event in lieu of
-    // a gamepaddisconnected one, with connected set to true nonetheless
-    // so force the gamepad disconnection
-    gamepadDisconnected({ gamepad: { index: e.gamepad.index, connected: false }});
-  }
-}
-
-function gamepadDisconnected(e) {
-  if (gamepad && gamepad.index === e.gamepad.index && !e.gamepad.connected) {
-    console.log('disconnecting', gamepad);
-    gamepad = undefined;
-  }
-};
-
 function getEntitySprite(entity) {
   const sprite = atlas[entity.type][entity.action][entity.direction];
   return (entity.action !== 'idle') ? sprite[entity.frame] : sprite;
@@ -283,11 +258,6 @@ function init() {
   buffer.height = HEIGHT;
   // scale to fit visible canvas
   resize();
-
-  // turn off gamepad polling if Gamepad API not supported
-  if (!navigator.getGamepads) {
-    pollGamepadData = function() {};
-  }
 
   // load assets
   loadTileset(tileset)
@@ -370,45 +340,6 @@ function loop() {
     currentTime = Date.now();
     update((currentTime - lastTime) / 1000);
     lastTime = currentTime;
-  }
-};
-
-function pollGamepadData() {
-  const controllers = navigator.getGamepads();
-  // ¯\_(ツ)_/¯ Chrome doesn't fire the gamepadconnected event when attaching a gamepad
-  // so pick the first connected gamepad of the list
-  if (!gamepad) {
-    for (let controller of controllers) {
-      if (controller && controller.connected) {
-        gamepadConnected({ gamepad: controller }, controllers);
-        break;
-      }
-    }
-  }
-  if (gamepad) {
-    // ninja attack if any button is pressed
-    ninja.attack = gamepad.buttons[BUTTON_A].pressed ||
-                   gamepad.buttons[BUTTON_B].pressed ||
-                   gamepad.buttons[BUTTON_X].pressed ||
-                   gamepad.buttons[BUTTON_Y].pressed;
-
-    // once connected, gamepad takes precedence over keyboard arrows
-    let left_x = Math.round(gamepad.axes[LEFT_ANALOG_X_AXIS] * 100) / 100;
-    if (left_x <= 0) {
-      ninja.moveLeft = left_x;
-      ninja.moveRight = 0;
-    } else {
-      ninja.moveLeft = 0;
-      ninja.moveRight = left_x;
-    }
-    let left_y = Math.round(gamepad.axes[LEFT_ANALOG_Y_AXIS] * 100) / 100;
-    if (left_y <= 0) {
-      ninja.moveUp = left_y;
-      ninja.moveDown = 0;
-    } else {
-      ninja.moveUp = 0;
-      ninja.moveDown = left_y;
-    }
   }
 };
 
@@ -563,7 +494,30 @@ function unloadGame() {
 function update(elapsedTime) {
   if (!ninja.dead && remainingTime > 0) {
 
-    pollGamepadData();
+    // TODO extract that into a function
+    const gamepadData = gamepadPollData();
+    if (gamepadData) {
+      // once connected, gamepad overrides keyboard inputs
+      if (gamepadData.leftX <= 0) {
+        // TODO maybe this would be simpler if moveLeft & moveRight
+        // were merged into a single value [-1, 1]
+        ninja.moveLeft = gamepadData.leftX;
+        ninja.moveRight = 0;
+      } else {
+        ninja.moveLeft = 0;
+        ninja.moveRight = gamepadData.leftX;
+      }
+      if (gamepadData.leftY <= 0) {
+        ninja.moveUp = gamepadData.leftY;
+        ninja.moveDown = 0;
+      } else {
+        ninja.moveUp = 0;
+        ninja.moveDown = gamepadData.leftY;
+      }
+      // ninja attack if any button is pressed
+      ninja.attack = gamepadData.buttonA || gamepadData.buttonB ||
+                     gamepadData.buttonX || gamepadData.buttonY;
+    }
 
     // collision test between ninja and all the veggies's previous positions
     const ninjaSprite = getEntitySprite(ninja);
